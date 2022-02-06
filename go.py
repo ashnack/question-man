@@ -3,11 +3,14 @@ from datetime import datetime
 
 from dotenv import dotenv_values
 from emoji import demojize
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
+from pydrive2.auth import GoogleAuth
+from pydrive2.drive import GoogleDrive
 
 class QuestionMan:
     sock = None
+    id: str
+    drive = None
+    MIME = 'application/vnd.google-apps.document'
 
     def __init__(self) -> None:
         # var init block
@@ -60,16 +63,20 @@ class QuestionMan:
         # gauth setup
         gauth = GoogleAuth()
         gauth.LocalWebserverAuth()
-        drive = GoogleDrive(gauth)
+        self.drive = GoogleDrive(gauth)
 
         # google file setup
-        file_list = drive.ListFile({'q': "title='" + config['DRIVE_FILE_NAME'] + "' and trashed=false"}).GetList()
-        if len(file_list):
-            id = file_list[0]['id']
-            file = drive.CreateFile({'id': id})
-        else:
-            file = drive.CreateFile({'title': config['DRIVE_FILE_NAME'], 'mimeType': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})
+        search_request = {'q': "title='" + config['DRIVE_FILE_NAME'] + "' and trashed=false"}
+        file_list = self.drive.ListFile(search_request).GetList()
+        if not len(file_list):
+            file = self.drive.CreateFile({
+                'title': config['DRIVE_FILE_NAME'],
+                'mimeType': self.MIME,
+            })
             file.Upload(param={'convert': True})
+            file_list = self.drive.ListFile(search_request).GetList()
+        print(file_list[0])
+        self.id = file_list[0]['id']
 
         # twitch connect block
         self.sock.connect((server, port))
@@ -78,7 +85,7 @@ class QuestionMan:
         self.sock.send(("JOIN #" + config['CHANNEL'] + "\n").encode('utf-8'))
 
         # lets see if this works
-        print(self.sock.recv(2048).decode('utf-8'))
+        self.sock.recv(2048).decode('utf-8')
 
         while True:
             resp = self.sock.recv(2048).decode('utf-8')
@@ -91,9 +98,13 @@ class QuestionMan:
                 chat_name = text_parts[0].split('!')[0]
                 print(chat_name + ": " + text_parts[1][:-1])
                 if text_parts[1].startswith('!q ') or text_parts[1].startswith('!Q '):
-                    content = str(file.GetContentString())
-                    file.SetContentString(content + "\n" + chat_name +" at " + str(datetime.now()) + "\n" + text_parts[1][3:] + "\n")
-                    file.Upload()
+                    self.send_block(chat_name +" at " + str(datetime.now()) + "\n" + text_parts[1][3:])
+    
+    def send_block(self, str_block: str):
+        file = self.drive.CreateFile({'id': self.id})
+        content: str = file.GetContentString(mimetype="text/plain", remove_bom=True)
+        file.SetContentString(content + "\n\n" + str_block + "\n")
+        file.Upload()
     
     def __del__(self):
         self.sock.close()
