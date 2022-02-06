@@ -75,7 +75,6 @@ class QuestionMan:
             })
             file.Upload(param={'convert': True})
             file_list = self.drive.ListFile(search_request).GetList()
-        print(file_list[0])
         self.id = file_list[0]['id']
 
         # twitch connect block
