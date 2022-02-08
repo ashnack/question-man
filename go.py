@@ -96,10 +96,13 @@ class QuestionMan:
             elif len(resp) > 0:
                 text_parts = demojize(resp)[1:].split(":", 1)
                 chat_name = text_parts[0].split('!')[0]
-                print(chat_name + ": " + text_parts[1][:-1])
-                if text_parts[1].startswith('!q ') or text_parts[1].startswith('!Q '):
-                    self.send_block("<p><b>"+chat_name +" at " + str(datetime.now())[:-7] + "</b></p><p>" + text_parts[1][3:]+"</p>")
-                    self.sock.send(("PRIVMSG #" + config['CHANNEL'] + " : @" + chat_name + " : QuestionMan has recieved your question.\n").encode('utf-8'))
+                if len(text_parts) == 1:
+                    print("Incorrect response: " + resp)
+                else:
+                    print(chat_name + ": " + text_parts[1][:-1])
+                    if text_parts[1].startswith('!q ') or text_parts[1].startswith('!Q '):
+                        self.send_block("<p><b>"+chat_name +" at " + str(datetime.now())[:-7] + "</b></p><p>" + text_parts[1][3:]+"</p>")
+                        self.sock.send(("PRIVMSG #" + config['CHANNEL'] + " : @" + chat_name + " : QuestionMan has recieved your question.\n").encode('utf-8'))
     
     def send_block(self, str_block: str):
         self.file.content = None
