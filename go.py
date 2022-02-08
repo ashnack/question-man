@@ -102,7 +102,7 @@ class QuestionMan:
     def send_block(self, str_block: str):
         file = self.drive.CreateFile({'id': self.id})
         content: str = file.GetContentString(mimetype="text/plain", remove_bom=True)
-        file.SetContentString(content + "\n\n" + str_block + "\n")
+        file.SetContentString(content.rstrip("\n") + "\n\n" + str_block + "\n")
         file.Upload()
     
     def __del__(self):
