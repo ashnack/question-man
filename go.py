@@ -102,6 +102,7 @@ class QuestionMan:
                     self.sock.send(("PRIVMSG #" + config['CHANNEL'] + " : @" + chat_name + " : QuestionMan has recieved your question.\n").encode('utf-8'))
     
     def send_block(self, str_block: str):
+        self.file.content = None
         content: str = self.file.GetContentString(mimetype="text/plain", remove_bom=True)
         self.file.SetContentString(content.strip("\n") + "\n\n" + str_block)
         self.file.Upload()
