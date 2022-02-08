@@ -1,5 +1,6 @@
-import socket
 from datetime import datetime
+import re
+import socket
 
 from dotenv import dotenv_values
 from emoji import demojize
@@ -11,6 +12,7 @@ class QuestionMan:
     id: str
     drive = None
     MIME = 'application/vnd.google-apps.document'
+    UNTAG = re.compile('<.*?>') 
 
     def __init__(self) -> None:
         # var init block
@@ -101,8 +103,9 @@ class QuestionMan:
                 else:
                     print(chat_name + ": " + text_parts[1][:-1])
                     if text_parts[1].startswith('!q ') or text_parts[1].startswith('!Q '):
-                        self.send_block("<p><b>"+chat_name +" at " + str(datetime.now())[:-7] + "</b></p><p>" + text_parts[1][3:]+"</p>")
-                        self.sock.send(("PRIVMSG #" + config['CHANNEL'] + " : @" + chat_name + " : QuestionMan has recieved your question.\n").encode('utf-8'))
+                        self.send_block("<p><b>" + chat_name + " at " + str(datetime.now())[:-7] + "</b></p><p>" + re.sub(self.UNTAG, '', text_parts[1][3:]) + "</p>")
+                        if config.get('SHUT_UP_FEEDBACK', '') == '':
+                            self.sock.send(("PRIVMSG #" + config['CHANNEL'] + " : @" + chat_name + " : QuestionMan has recieved your question.\n").encode('utf-8'))
     
     def send_block(self, str_block: str):
         self.file.content = None
