@@ -63,19 +63,20 @@ class QuestionMan:
         # gauth setup
         gauth = GoogleAuth()
         gauth.LocalWebserverAuth()
-        self.drive = GoogleDrive(gauth)
+        drive = GoogleDrive(gauth)
 
         # google file setup
         search_request = {'q': "title='" + config['DRIVE_FILE_NAME'] + "' and trashed=false"}
-        file_list = self.drive.ListFile(search_request).GetList()
+        file_list = drive.ListFile(search_request).GetList()
         if not len(file_list):
-            file = self.drive.CreateFile({
+            file = drive.CreateFile({
                 'title': config['DRIVE_FILE_NAME'],
                 'mimeType': self.MIME,
             })
             file.Upload(param={'convert': True})
-            file_list = self.drive.ListFile(search_request).GetList()
-        self.id = file_list[0]['id']
+            file_list = drive.ListFile(search_request).GetList()
+        id = file_list[0]['id']
+        self.file = drive.CreateFile({'id': id})
 
         # twitch connect block
         self.sock.connect((server, port))
@@ -98,12 +99,12 @@ class QuestionMan:
                 print(chat_name + ": " + text_parts[1][:-1])
                 if text_parts[1].startswith('!q ') or text_parts[1].startswith('!Q '):
                     self.send_block(chat_name +" at " + str(datetime.now()) + "\n" + text_parts[1][3:])
+                    self.sock.send(("PRIVMSG #" + config['CHANNEL'] + " : @" + chat_name + " : QuestionMan has recieved your question.\n").encode('utf-8'))
     
     def send_block(self, str_block: str):
-        file = self.drive.CreateFile({'id': self.id})
-        content: str = file.GetContentString(mimetype="text/plain", remove_bom=True)
-        file.SetContentString(content.strip("\n") + "\n\n" + str_block)
-        file.Upload()
+        content: str = self.file.GetContentString(mimetype="text/plain", remove_bom=True)
+        self.file.SetContentString(content.strip("\n") + "\n\n" + str_block)
+        self.file.Upload()
     
     def __del__(self):
         self.sock.close()
