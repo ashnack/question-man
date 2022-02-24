@@ -1,26 +1,26 @@
 from datetime import datetime
+import os
 import re
 import socket
+import time
 
 from dotenv import dotenv_values
 from emoji import demojize
-from pydrive2.auth import GoogleAuth
+from pydrive2.auth import GoogleAuth, RefreshError
 from pydrive2.drive import GoogleDrive
+
 
 class QuestionMan:
     sock = None
     id: str
     drive = None
     MIME = 'application/vnd.google-apps.document'
-    UNTAG = re.compile('<.*?>') 
+    UNTAG = re.compile('<.*?>')
+    config = dotenv_values("./.env")
+    server = 'irc.chat.twitch.tv'
+    port = 6667
 
     def __init__(self) -> None:
-        # var init block
-
-        server = 'irc.chat.twitch.tv'
-        port = 6667
-        self.sock = socket.socket()
-        config = dotenv_values("./.env")
         print("""
                                     /%@@@@@@@@@@@@@@@@@@@@@@@@@%/
                             ,&@@@@@@@@@@@@@@@&&%##%&&&@@@@@@@@@@@@@@@@
@@ -62,17 +62,16 @@ class QuestionMan:
                             (@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#
                                     ,(%@@@@@@@@@@@@@@@@@@@@##/,
 """)
-        # gauth setup
-        gauth = GoogleAuth()
-        gauth.LocalWebserverAuth()
-        drive = GoogleDrive(gauth)
+        # init
+        drive = self.gauth()
+        self.twitch_connect()
 
         # google file setup
-        search_request = {'q': "title='" + config['DRIVE_FILE_NAME'] + "' and trashed=false"}
+        search_request = {'q': "title='" + self.config['DRIVE_FILE_NAME'] + "' and trashed=false"}
         file_list = drive.ListFile(search_request).GetList()
         if not len(file_list):
             file = drive.CreateFile({
-                'title': config['DRIVE_FILE_NAME'],
+                'title': self.config['DRIVE_FILE_NAME'],
                 'mimeType': self.MIME,
             })
             file.Upload(param={'convert': True})
@@ -80,17 +79,8 @@ class QuestionMan:
         id = file_list[0]['id']
         self.file = drive.CreateFile({'id': id})
 
-        # twitch connect block
-        self.sock.connect((server, port))
-        self.sock.send(("PASS " + config['TOKEN'] + "\n").encode('utf-8'))
-        self.sock.send(("NICK " + config['USER'] + "\n").encode('utf-8'))
-        self.sock.send(("JOIN #" + config['CHANNEL'] + "\n").encode('utf-8'))
-
-        # lets see if this works
-        self.sock.recv(2048).decode('utf-8')
-
         while True:
-            resp = self.sock.recv(2048).decode('utf-8')
+            resp = self.get_message()
 
             if resp.startswith('PING'):
                 self.sock.send("PONG\n".encode('utf-8'))
@@ -104,17 +94,53 @@ class QuestionMan:
                     print(chat_name + ": " + text_parts[1][:-1])
                     if text_parts[1].startswith('!q ') or text_parts[1].startswith('!Q '):
                         self.send_block("<p><b>" + chat_name + " at " + str(datetime.now())[:-7] + "</b></p><p>" + re.sub(self.UNTAG, '', text_parts[1][3:]) + "</p>")
-                        if config.get('SHUT_UP_FEEDBACK', '') == '':
-                            self.sock.send(("PRIVMSG #" + config['CHANNEL'] + " : @" + chat_name + " : QuestionMan has recieved your question.\n").encode('utf-8'))
+                        if self.config.get('SHUT_UP_FEEDBACK', '') == '':
+                            self.sock.send(("PRIVMSG #" + self.config['CHANNEL'] + " : @" + chat_name + " : QuestionMan has received your question.\n").encode('utf-8'))
+    
+    def gauth(self, in_loop=False):
+        try:
+            gauth = GoogleAuth()
+            gauth.LocalWebserverAuth()
+            return GoogleDrive(gauth)
+        except RefreshError:
+            if not in_loop:
+                os.remove("credentials.json")
+                return self.gauth(True)
     
     def send_block(self, str_block: str):
-        self.file.content = None
-        content: str = self.file.GetContentString(mimetype="text/html", remove_bom=True).replace('<p class="c1"><span class="c0"></span></p>', '')
-        self.file.SetContentString(content[:-14] + "<p>" + str_block + "</p></body></html>")
-        self.file.Upload()
+        try:
+            self.file.content = None
+            content: str = self.file.GetContentString(mimetype="text/html", remove_bom=True).replace('<p class="c1"><span class="c0"></span></p>', '')
+            self.file.SetContentString(content[:-14] + "<p>" + str_block + "</p></body></html>")
+            self.file.Upload()
+        except RefreshError:
+            self.sock.send(("PRIVMSG #" + self.config['CHANNEL'] + " : QuestionMan needs to be refreshed.\n").encode('utf-8'))
+            print("please restart the application")
+            self.sock.close()
+            exit()
+
+    def twitch_connect(self):
+        self.sock = socket.socket()
+        self.sock.connect((self.server, self.port))
+        self.sock.send(("PASS " + self.config['TOKEN'] + "\n").encode('utf-8'))
+        self.sock.send(("NICK " + self.config['USER'] + "\n").encode('utf-8'))
+        self.sock.send(("JOIN #" + self.config['CHANNEL'] + "\n").encode('utf-8'))
+        # test that everything is good
+        self.get_message()
+        self.sock.send(("PRIVMSG #" + self.config['CHANNEL'] + " : QuestionMan is reporting for duty.\n").encode('utf-8'))
+
+    def get_message(self):
+        try:
+            return self.sock.recv(2048).decode('utf-8')
+        except ConnectionResetError:
+            self.sock.close()
+            time.sleep(15)
+            self.twitch_connect()
+            return self.get_message()
     
     def __del__(self):
-        self.sock.close()
+        if self.sock:
+            self.sock.close()
 
 
 QuestionMan()
