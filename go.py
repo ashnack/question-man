@@ -1,4 +1,5 @@
 from datetime import datetime
+from json.decoder import JSONDecodeError
 import os
 import re
 import socket
@@ -106,18 +107,32 @@ class QuestionMan:
             if not in_loop:
                 os.remove("credentials.json")
                 return self.gauth(True)
+
+    def please_refresh(self, msg="refresh needed"):
+        self.sock.send(("PRIVMSG #" + self.config['CHANNEL'] + " : QuestionMan needs to be refreshed.\n").encode('utf-8'))
+        print("please restart the application - " + msg)
+        self.sock.close()
+        exit()
     
     def send_block(self, str_block: str):
         try:
             self.file.content = None
-            content: str = self.file.GetContentString(mimetype="text/html", remove_bom=True).replace('<p class="c1"><span class="c0"></span></p>', '')
+            try:
+                content: str = self.file.GetContentString(mimetype="text/html", remove_bom=True)
+            except JSONDecodeError:
+                time.sleep(1)
+                try:
+                    # let us retry before calling it quits
+                    self.file.content = None
+                    content: str = self.file.GetContentString(mimetype="text/html", remove_bom=True)
+                except JSONDecodeError:
+                    self.please_refresh("content coming in from the google doc seems invalid")
+
+            content = content.replace('<p class="c1"><span class="c0"></span></p>', '')
             self.file.SetContentString(content[:-14] + "<p>" + str_block + "</p></body></html>")
             self.file.Upload()
         except RefreshError:
-            self.sock.send(("PRIVMSG #" + self.config['CHANNEL'] + " : QuestionMan needs to be refreshed.\n").encode('utf-8'))
-            print("please restart the application")
-            self.sock.close()
-            exit()
+            self.please_refresh()
 
     def twitch_connect(self):
         self.sock = socket.socket()
