@@ -87,16 +87,18 @@ class QuestionMan:
                 self.sock.send("PONG\n".encode('utf-8'))
             
             elif len(resp) > 0:
-                text_parts = demojize(resp)[1:].split(":", 1)
-                chat_name = text_parts[0].split('!')[0]
-                if len(text_parts) == 1:
-                    print("Incorrect response: " + resp)
-                else:
-                    print(chat_name + ": " + text_parts[1][:-1])
-                    if text_parts[1].startswith('!q ') or text_parts[1].startswith('!Q '):
-                        self.send_block("<p><b>" + chat_name + " at " + str(datetime.now())[:-7] + "</b></p><p>" + re.sub(self.UNTAG, '', text_parts[1][3:]) + "</p>")
-                        if self.config.get('SHUT_UP_FEEDBACK', '') == '':
-                            self.sock.send(("PRIVMSG #" + self.config['CHANNEL'] + " : @" + chat_name + " : QuestionMan has received your question.\n").encode('utf-8'))
+                for text in resp.split('\n'):
+                    if len(text) > 0:
+                        text_parts = demojize(text)[1:].split(":", 1)
+                        chat_name = text_parts[0].split('!')[0]
+                        if len(text_parts) == 1:
+                            print("Incorrect response: " + resp)
+                        else:
+                            print(chat_name + ": " + text_parts[1][:-1])
+                            if text_parts[1].startswith('!q ') or text_parts[1].startswith('!Q '):
+                                self.send_block("<p><b>" + chat_name + " at " + str(datetime.now())[:-7] + "</b></p><p>" + re.sub(self.UNTAG, '', text_parts[1][3:]) + "</p>")
+                                if self.config.get('SHUT_UP_FEEDBACK', '') == '':
+                                    self.sock.send(("PRIVMSG #" + self.config['CHANNEL'] + " : @" + chat_name + " : QuestionMan has received your question.\n").encode('utf-8'))
     
     def gauth(self, in_loop=False):
         try:
