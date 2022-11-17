@@ -83,6 +83,9 @@ class QuestionMan:
         while True:
             resp = self.get_message()
 
+            if resp == False:
+                return
+
             if resp.startswith('PING'):
                 self.sock.send("PONG\n".encode('utf-8'))
             
@@ -131,7 +134,7 @@ class QuestionMan:
                     self.please_refresh("content coming in from the google doc seems invalid")
 
             content = content.replace('<p class="c1"><span class="c0"></span></p>', '')
-            self.file.SetContentString(content[:-14] + "<p>" + str_block + "</p></body></html>")
+            self.file.SetContentString(content[:-14] + "<hr><p>" + str_block + "</p></body></html>")
             self.file.Upload()
         except RefreshError:
             self.please_refresh()
@@ -144,20 +147,19 @@ class QuestionMan:
         self.sock.send(("JOIN #" + self.config['CHANNEL'] + "\n").encode('utf-8'))
         # test that everything is good
         self.get_message()
-        self.sock.send(("PRIVMSG #" + self.config['CHANNEL'] + " : QuestionMan is reporting for duty.\n").encode('utf-8'))
+        if self.config.get('SHUT_UP_FEEDBACK', '') == '':
+            self.sock.send(("PRIVMSG #" + self.config['CHANNEL'] + " : QuestionMan is reporting for duty.\n").encode('utf-8'))
 
     def get_message(self):
         try:
             return self.sock.recv(2048).decode('utf-8')
-        except ConnectionResetError:
-            self.sock.close()
+        except:
             time.sleep(15)
-            self.twitch_connect()
-            return self.get_message()
-    
+            return False
+
     def __del__(self):
         if self.sock:
             self.sock.close()
 
-
-QuestionMan()
+while True:
+    QuestionMan()
