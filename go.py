@@ -132,8 +132,8 @@ class QuestionMan:
                     content: str = self.file.GetContentString(mimetype="text/html", remove_bom=True)
                 except JSONDecodeError:
                     self.please_refresh("content coming in from the google doc seems invalid")
-
-            content = content.replace('<p class="c1"><span class="c0"></span></p>', '')
+            if self.config.get('COLOR_OF_TEXT', ''):
+                content = content.replace('<style type="text/css">', '<style type="text/css">span,p,hr{color:' + self.config['COLOR_OF_TEXT'] + ' !important;}')
             self.file.SetContentString(content[:-14] + "<hr><p>" + str_block + "</p></body></html>")
             self.file.Upload()
         except RefreshError:
@@ -153,8 +153,10 @@ class QuestionMan:
     def get_message(self):
         try:
             return self.sock.recv(2048).decode('utf-8')
+        except KeyboardInterrupt:
+            self.__del__()
+            exit()
         except:
-            time.sleep(15)
             return False
 
     def __del__(self):
