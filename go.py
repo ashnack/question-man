@@ -133,7 +133,7 @@ class QuestionMan:
                 except JSONDecodeError:
                     self.please_refresh("content coming in from the google doc seems invalid")
             if self.config.get('COLOR_OF_TEXT', ''):
-                content = content.replace('<style type="text/css">', '<style type="text/css">span,p,hr{color:' + self.config['COLOR_OF_TEXT'] + ' !important;}')
+                content = content.replace('<style type="text/css">', '<style type="text/css">body{background-color:' + self.config['COLOR_OF_BACKGROUND'] + ' !important;}span,p,hr{color:' + self.config['COLOR_OF_TEXT'] + ' !important;}')
             self.file.SetContentString(content[:-14] + "<hr><p>" + str_block + "</p></body></html>")
             self.file.Upload()
         except RefreshError:
