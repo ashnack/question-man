@@ -3,6 +3,7 @@ from json.decoder import JSONDecodeError
 import os
 import re
 import time
+from typing import Optional
 
 from pydrive2.auth import GoogleAuth, RefreshError
 from pydrive2.drive import GoogleDrive
@@ -47,7 +48,7 @@ class QuestionMan:
         self.sock.close()
         exit()
     
-    def send_block(self, str_block: str):
+    def send_block(self, str_block: str) -> None:
         try:
             self.file.content = None
             try:
@@ -67,7 +68,8 @@ class QuestionMan:
         except RefreshError:
             self.please_refresh()
 
-    def read_chat(self, chat_name, text_parts):
+    def read_chat(self, chat_name, text_parts) -> Optional[str]:
         if text_parts[1].startswith('!q ') or text_parts[1].startswith('!Q '):
             self.send_block("<p><b>" + chat_name + " at " + str(datetime.now())[:-7] + "</b></p><p>" + re.sub(self.UNTAG, '', text_parts[1][3:]) + "</p>")
-            return "PRIVMSG #" + self.config['CHANNEL'] + " : @" + chat_name + " : QuestionMan has received your question."
+            if self.config.get('SHUT_UP_FEEDBACK', '') == '':
+                return "PRIVMSG #" + self.config['CHANNEL'] + " : @" + chat_name + " : QuestionMan has received your question."

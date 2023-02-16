@@ -1,9 +1,6 @@
-from datetime import datetime
 from glob import glob
-from json.decoder import JSONDecodeError
 import logging
 import os
-import re
 import socket
 
 from dotenv import dotenv_values
@@ -92,7 +89,7 @@ class QuestionMan:
                             print(chat_name + ": " + text_parts[1][:-1])
                             for bot in bot_list:
                                 response = bot.read_chat(chat_name, text_parts)
-                                if response and self.config.get('SHUT_UP_FEEDBACK', '') == '':
+                                if response:
                                     self.sock.send((response + "\n").encode('utf-8'))
 
     def twitch_connect(self):
