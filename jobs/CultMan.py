@@ -30,18 +30,19 @@ class CultMan:
                         self.words['!' + seperate] = parser[word]
 
     def read_chat(self, chat_name: str, text_parts: list[str]) -> Optional[str]:
-        returns: Optional[None]
+        returns: Optional[None] = None
         for word, config in self.words.items():
             if text_parts[1].strip().lower() == word:
                 config_dict = dict(config)
-                return "PRIVMSG #" + self.config['CHANNEL'] + " : @" + chat_name + " : " + str(config['title']) + self.pull_page(config_dict)
+                returns = "PRIVMSG #" + self.config['CHANNEL'] + " : @" + chat_name + " : " + str(config['title']) + str(self.pull_page(config_dict))
+                continue
+        return returns
 
     def pull_page(self, config) -> str:
         returns: str = ""
         if 'webpage' in config:
             page = get(config['webpage'], headers=self.HEADERS)
             if page.status_code != 200:
-                print(page.text)
                 raise ValueError('page was not retrieved')
             soup = BeautifulSoup(page.text, "html.parser")
             for elem in soup.select(config['query']):
@@ -49,7 +50,7 @@ class CultMan:
                     returns += " - "
                 else:
                     returns += " "
-                returns += elem.text
+                returns += str(elem.text)
         return returns
 
         
