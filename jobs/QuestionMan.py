@@ -15,7 +15,7 @@ class QuestionMan:
     MIME = 'application/vnd.google-apps.document'
     UNTAG = re.compile('<.*?>')
 
-    def init_bot(self, config):
+    def init_bot(self, config) -> None:
         drive = self.gauth()
         self.config = config
 

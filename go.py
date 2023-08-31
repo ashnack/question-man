@@ -90,7 +90,9 @@ class QuestionMan:
                             for bot in bot_list:
                                 response = bot.read_chat(chat_name, text_parts)
                                 if response:
-                                    self.sock.send((response + "\n").encode('utf-8'))
+                                    # print("sending " + response)
+                                    self.sock.send((response + "\r\n").encode('utf-8'))
+                                    break
 
     def twitch_connect(self):
         self.sock = socket.socket()

@@ -1,0 +1,7 @@
+[next/upcoming]
+title = * Here are the upcoming streams *
+webpage = https://lorerunner.com/upcoming
+query = div.entry.themeform ol li:nth-child(-n+6)
+
+[avocado]
+title = This was never a valid command.
