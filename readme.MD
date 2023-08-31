@@ -3,6 +3,7 @@
 - download those files to a folder
 - run install.bat in a command line window (shift right-click to make the open terminal window appear)
 - rename .env.example as .env
+- nename cult.ini.example as cult.ini (leave it empty if you don't need the feature)
 - add the username of the twitch account to connect as a reader and get a token password here: https://twitchapps.com/tmi/
 - get a client_secrets.json file in the way described below
   - follow the procedure here https://pythonhosted.org/PyDrive/quickstart.html#authentication and download the client secret. (stop after step 5)
