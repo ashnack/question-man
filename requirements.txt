@@ -1,7 +1,7 @@
 beautifulsoup4>=4.12.2
 configparser>=6.0
 emoji==2.2
-google-api-python-client==2.66
+google-api-python-client==2.134
 requests>=2.31
 pydrive2==1.15
 python_dotenv==0.21

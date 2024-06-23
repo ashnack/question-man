@@ -3,7 +3,7 @@ from json.decoder import JSONDecodeError
 import os
 import re
 import time
-from typing import Optional
+from typing import Optional, Any
 
 from pydrive2.auth import GoogleAuth, RefreshError
 from pydrive2.drive import GoogleDrive
@@ -14,14 +14,15 @@ class QuestionMan:
     drive = None
     MIME = 'application/vnd.google-apps.document'
     UNTAG = re.compile('<.*?>')
+    file_id: str = ""
 
-    def init_bot(self, config) -> None:
+    def init_bot(self, config: Any) -> None:
         drive = self.gauth()
         self.config = config
 
         # google file setup
         search_request = {'q': "title='" + self.config['DRIVE_FILE_NAME'] + "' and trashed=false"}
-        file_list = drive.ListFile(search_request).GetList()
+        file_list: list[Any] = drive.ListFile(search_request).GetList()
         if not len(file_list):
             file = drive.CreateFile({
                 'title': self.config['DRIVE_FILE_NAME'],
@@ -29,8 +30,8 @@ class QuestionMan:
             })
             file.Upload(param={'convert': True})
             file_list = drive.ListFile(search_request).GetList()
-        id = file_list[0]['id']
-        self.file = drive.CreateFile({'id': id})
+        self.file_id = file_list[0]['id']
+        print("file id set as: " + self.file_id)
 
     def gauth(self, in_loop=False):
         try:
@@ -50,6 +51,8 @@ class QuestionMan:
     
     def send_block(self, str_block: str) -> None:
         try:
+            drive = self.gauth()
+            self.file = drive.CreateFile({'id': self.file_id})
             self.file.content = None
             try:
                 content: str = self.file.GetContentString(mimetype="text/html", remove_bom=True)
@@ -69,7 +72,7 @@ class QuestionMan:
             self.please_refresh()
 
     def read_chat(self, chat_name, text_parts) -> Optional[str]:
-        if text_parts[1].startswith('!q ') or text_parts[1].startswith('!Q '):
+        if text_parts[1][0:3].lower() == '!q ':
             self.send_block("<p><b>" + chat_name + " at " + str(datetime.now())[:-7] + "</b></p><p>" + re.sub(self.UNTAG, '', text_parts[1][3:]) + "</p>")
             if self.config.get('SHUT_UP_FEEDBACK', '') == '':
                 return "PRIVMSG #" + self.config['CHANNEL'] + " : @" + chat_name + " : QuestionMan has received your question."

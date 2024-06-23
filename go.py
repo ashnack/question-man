@@ -92,7 +92,7 @@ class QuestionMan:
                                 if response:
                                     # print("sending " + response)
                                     self.sock.send((response + "\r\n").encode('utf-8'))
-                                    break
+                                    continue
 
     def twitch_connect(self):
         self.sock = socket.socket()
